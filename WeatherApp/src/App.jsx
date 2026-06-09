@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState("Delhi");
   const [weather, setWeather] = useState(null);
 
   const API_KEY = "9910f9f8d9973528281b889421602b19";
@@ -11,9 +11,14 @@ function App() {
   async function fetchWeather() {
     const res = await fetch(url);
     const data = await res.json();
-    
+
     setWeather(data);
   }
+
+  useEffect(() => {
+    // page load pe Delhi ka weather aa jaye
+    fetchWeather();
+  }, []);
 
   return (
     <>

@@ -85,8 +85,9 @@ const [count, setCount] = useState(0);
 **Why count++ doesn't work:**
 
 ```jsx
-count++; // ❌ directly mutates — React doesn't know it changed
-setCount(count + 1); // ✅ React knows — triggers re-render
+count++;                       // ❌ directly mutates — React doesn't know it changed
+setCount(count + 1);           // ✅ React knows — triggers re-render
+setCount(prev => prev + 1)     // ✅ best way — uses previous value safely
 ```
 
 **Counter App Example:**
@@ -103,8 +104,7 @@ function App() {
 
   function decrease() {
     if (count > 0) {
-      // count won't go below 0
-      setCount(count - 1);
+      setCount(count - 1); // count won't go below 0
     }
   }
 
@@ -149,20 +149,300 @@ Only the **component that has the state** re-renders — not the whole page.
 
 ## useEffect Hook
 
-> _(Coming soon — WeatherApp React project)_
+> **Project Reference: WeatherApp**
+
+`useEffect` is used when you want to do something **outside of React** — like API calls, timers, or updating the page title.
+
+```jsx
+useEffect(() => {
+    // code here
+
+    return () => {
+        // cleanup — runs before component is removed
+    }
+}, [dependency])
+```
+
+**Dependency Array — 3 cases:**
+
+```jsx
+useEffect(() => {}, [count]) // runs when count changes
+useEffect(() => {}, [])      // runs only ONCE on page load
+useEffect(() => {})          // runs on EVERY re-render — avoid this!
+```
+
+**Why empty array `[]` is important:**
+
+Without `[]`, useEffect runs on every re-render — if there's an API call inside, it will call the API infinitely and crash the app!
+
+---
+
+## Events — onChange vs onClick
+
+> **Project Reference: WeatherApp**
+
+- **onChange** — fires on every key press (used on input fields)
+- **onClick** — fires on click (used on buttons)
+
+```jsx
+// input — onChange to capture every keystroke
+<input onChange={(e) => setCity(e.target.value)} />
+
+// button — onClick to trigger action
+<button onClick={fetchWeather}>Search</button>
+```
+
+**What is `e`?**
+
+`e` = event object — browser sends it automatically when something happens.
+- `e.target` = the element where event happened
+- `e.target.value` = the current value of that element
+
+---
+
+## Async/Await with Fetch in React
+
+> **Project Reference: WeatherApp**
+
+API calls in React are same as vanilla JS — just put them inside a function:
+
+```jsx
+async function fetchWeather() {
+    const res = await fetch(url)   // wait for response
+    const data = await res.json()  // wait for JSON conversion
+    setWeather(data)               // store in state
+}
+```
+
+Both `await` are needed:
+- First `await` — waits for the network response
+- Second `await` — waits for JSON conversion (`.json()` is also async)
+
+---
+
+## Conditional Rendering
+
+> **Project Reference: WeatherApp**
+
+Show something only when data exists — using `&&`:
+
+```jsx
+{weather && (
+    <>
+        <h2>{weather.name}</h2>
+        <p>{weather.main.temp}</p>
+    </>
+)}
+```
+
+`weather &&` means — if weather is not null, then show this. Same as:
+
+```js
+// vanilla JS equivalent
+if (weather !== null) {
+    // display
+}
+```
+
+---
+
+## WeatherApp — Full Example
+
+```jsx
+import { useState } from "react";
+
+function App() {
+  const [city, setCity] = useState("");
+  const [weather, setWeather] = useState(null);
+
+  const API_KEY = "your_api_key";
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+
+  async function fetchWeather() {
+    const res = await fetch(url);
+    const data = await res.json();
+    setWeather(data);
+  }
+
+  return (
+    <>
+      {weather && (
+        <>
+          <h2>Place: {weather.name}</h2>
+          <p>Temp: {weather.main.temp}°C</p>
+          <p>Humidity: {weather.main.humidity}%</p>
+          <p>Pressure: {weather.main.pressure}</p>
+          <p>Wind Speed: {weather.wind.speed} m/s</p>
+        </>
+      )}
+      <input
+        value={city}
+        placeholder="Enter city"
+        onChange={(e) => setCity(e.target.value)}
+      />
+      <button onClick={fetchWeather}>Search</button>
+    </>
+  );
+}
+```
 
 ---
 
 ## Props
 
-> _(Coming soon)_
+> **Project Reference: Todo App**
+
+Props = passing data from one component to another.
+
+```jsx
+// Parent — passes data
+<Hello name="Sachin" age={24} hobbies={["Coding", "Music"]} />
+
+// Child — receives data
+function Hello({ name, age, hobbies }) {
+    return <h1>Hello {name}</h1>
+}
+```
+
+**Props vs State:**
+
+- **State** — component ki apni value, khud manage karta hai
+- **Props** — bahar se aata hai, read only hota hai — change nahi kar sakte
+
+> Props = baap ne diya paisa. State = apni pocket ka paisa.
+
+**Default Props:**
+
+```jsx
+function Hello({ name = "User", age = 18 }) {
+    // agar parent ne pass nahi kiya toh default value use hogi
+}
+```
+
+**Function bhi props mein pass hoti hai:**
+
+```jsx
+// Parent
+<Todolist todos={todos} deleteTodo={deleteTodo} />
+
+// Child
+function Todolist({ todos, deleteTodo }) {
+    return todos.map((todo, index) => (
+        <li key={index}>
+            {todo}
+            <button onClick={() => deleteTodo(todo)}>Delete</button>
+        </li>
+    ))
+}
+```
+
+**Why `() => deleteTodo(todo)` and not `deleteTodo`:**
+
+- `onClick={deleteTodo}` — click hone par chalega but kaunsa todo delete kare pata nahi
+- `onClick={() => deleteTodo(todo)}` — specific todo pass karta hai
+
+---
+
+## Lists & Keys
+
+> **Project Reference: Todo App & Props Example**
+
+`map()` use karo array ko list mein convert karne ke liye:
+
+```jsx
+const hobbies = ["Reading", "Coding", "Music"]
+
+hobbies.map((hobby, index) => (
+    <li key={index}>{hobby}</li>
+))
+```
+
+**key kyun zaroori hai:**
+
+React ko pata chale ki kaunsa element change hua — bina key ke sab re-render hoga.
+
+**index vs unique id:**
+
+```jsx
+key={index}    // ✅ static list ke liye theek hai
+key={item.id}  // ✅ dynamic list (add/delete) ke liye better
+```
+
+**Important — map mein variable naam alag rakho:**
+
+```jsx
+// ❌ confusing — bahar wala aur andar wala same naam
+todos.map((todos, index) => ...)
+
+// ✅ clear
+todos.map((todo, index) => ...)
+```
+
+---
+
+## Todo App — Full Example
+
+```jsx
+import { useState } from "react";
+import Todolist from "./Todolist";
+
+function App() {
+  const [todo, setTodo] = useState("");
+  const [todos, setTodos] = useState([]);
+
+  function addTodo() {
+    if (todo != "") {
+      setTodos([...todos, todo]);
+    }
+    setTodo("");
+  }
+
+  function deleteTodo(num) {
+    setTodos(todos.filter(n => n != num));
+  }
+
+  return (
+    <>
+      <input
+        placeholder="Enter Todo"
+        value={todo}
+        onChange={(e) => setTodo(e.target.value)}
+      />
+      <button onClick={addTodo}>Add</button>
+      <Todolist todos={todos} deleteTodo={deleteTodo} />
+    </>
+  );
+}
+```
+
+```jsx
+// Todolist.jsx
+export default function Todolist({ todos, deleteTodo }) {
+  return (
+    <ul>
+      {todos.map((todo, index) => (
+        <li key={index}>
+          {todo}
+          <button onClick={() => deleteTodo(todo)}>Delete</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
 
 ---
 
 ## React Router
 
-> _(Coming soon)_
+> *(Coming soon)*
 
 ---
 
-_Updated as new concepts are learned through projects._
+## useContext
+
+> *(Coming soon)*
+
+---
+
+*Updated as new concepts are learned through projects.*
